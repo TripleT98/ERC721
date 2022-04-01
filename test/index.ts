@@ -12,12 +12,13 @@ describe("Testing ERC721 contract", async()=>{
   let minter: string = web3.utils.keccak256("minter");
   let burner: string = web3.utils.keccak256("burner");
   let mainAdmin: string = web3.utils.keccak256("admin");
+  let baseURL: string ="https://ipfs.io/ipfs/";
   beforeEach(async()=>{
 
     [owner, user1, user2, user3] = await ethers.getSigners();
 
     MyERC721 = await ethers.getContractFactory("MyERC721");
-    myERC721 = await MyERC721.connect(owner).deploy("MyERC721", "MRCNF", mainAdmin, user1.address);
+    myERC721 = await MyERC721.connect(owner).deploy("MyERC721", "MRCNF", mainAdmin, user1.address, baseURL);
     await myERC721.deployed();
   })
 
@@ -279,6 +280,29 @@ describe("Testing ERC721 contract", async()=>{
       let err_mess: string = "Error: You have no access to mint tokens!";
       await expect(myERC721.connect(user2).mint(user3.address, 2)).to.be.revertedWith(err_mess);
 
+    })
+
+  })
+
+  describe("Testing URIStorage", async()=>{
+
+    it("Testing baseURL function", async()=>{
+      expect(await myERC721.baseURL()).to.equal(baseURL);
+    })
+
+    it("Tseting setTokenURI and then getTokenURI functions", async()=>{
+      //Trying to get token's URI while token doesn't exist
+      let some_uri: string = "some_uri";
+      let err_mess: string = "Error: This token doesn't exist!"
+      await expect(myERC721.getTokenURI("1")).to.be.revertedWith(err_mess);
+      //Trying to set URI to not existing token
+      await expect(myERC721.setTokenURI("1", some_uri)).to.be.revertedWith(err_mess);
+      //mint token "1"
+      err_mess = "This token hasn't URI yet!";
+      await myERC721.connect(owner).mint(user1.address, 1);
+      await expect(myERC721.getTokenURI("1")).to.be.revertedWith(err_mess);
+      await myERC721.setTokenURI("1", some_uri);
+      expect(await myERC721.getTokenURI("1")).to.equal(baseURL + some_uri);
     })
 
   })

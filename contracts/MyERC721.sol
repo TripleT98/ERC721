@@ -1,15 +1,15 @@
-//SPDX-License-Identifier: Unlicense
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
 import "./MyAccessControll.sol";
+import "./ERC721URIStorage.sol";
 
-contract MyERC721 is MyAccessControll{
+contract MyERC721 is MyAccessControll, ERC721URIStorage{
 
   string public name;
   string public symbol;
 
-  constructor(string memory _name, string memory _symbol, bytes32 _adminRole, address _admin) MyAccessControll(_adminRole, _admin){
+  constructor(string memory _name, string memory _symbol, bytes32 _adminRole, address _admin, string memory _baseURL) MyAccessControll(_adminRole, _admin) ERC721URIStorage(_baseURL){
     name = _name;
     symbol = _symbol;
     bytes32 minter = keccak256("minter");
@@ -134,6 +134,19 @@ function _exist(uint _tokenId) view internal returns (bool) {
 
 function exist(uint _tokenId) view public returns (bool) {
   return _exist(_tokenId);
+}
+
+function setTokenURI(uint _tokenId, string memory _tokenURI) public OnlyMinter(msg.sender) {
+  require(_exist(_tokenId), "Error: This token doesn't exist!");
+  _setTokenURI(_tokenId, _tokenURI);
+}
+
+function getTokenURI(uint _tokenId) view public returns (string memory) {
+  require(_exist(_tokenId), "Error: This token doesn't exist!");
+  bytes memory tokenUri = abi.encodePacked(_getTokenURI(_tokenId));
+  bytes memory baseUrl = abi.encodePacked(baseURL());
+  require((tokenUri.length != baseUrl.length), "This token hasn't URI yet!");
+  return _getTokenURI(_tokenId);
 }
 
 }
